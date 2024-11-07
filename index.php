@@ -9,7 +9,6 @@
 </head>
 
 <body>
-
   <nav>
     <header>
       <h1 class="logo">E-COM</h1>
@@ -42,7 +41,6 @@
   </div>
 
   <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
-
 </body>
 
 </html>
