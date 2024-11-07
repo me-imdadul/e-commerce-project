@@ -43,29 +43,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT password FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT id, password FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
-    $stmt->bind_result($hashed_password);
+    $stmt->bind_result($userId, $hashed_password);
     $stmt->fetch();
     $stmt->close();
 
     if ($hashed_password && password_verify($password, $hashed_password)) {
-      $stmt = $conn->prepare("SELECT id, username, email, phone_number, address FROM users WHERE username = ?");
-      $stmt->bind_param("s", $username);
-      $stmt->execute();
-      $result = $stmt->get_result();
-      $user = $result->fetch_assoc();
-      $_SESSION['id'] = $user['id'];
-      $_SESSION['username'] = $user['username'];
-      $_SESSION['email'] = $user['email'];
-      $_SESSION['phone_number'] = $user['phone_number'];
-      $_SESSION['address'] = $user['address'];
+      // Login successful
+      $_SESSION['id'] = $userId;
+      $_SESSION['username'] = $username;
       header("Location: index.php");
       exit();
     } else {
-      echo "<script>alert('Bhai Username password galat dala hai!');</script>";
-
+      // Login failed
+      echo "<script>alert('Bhai Username password galat dala hai!'); window.location.href = 'index.php';</script>";
+      exit();
     }
   } elseif ($action == "signup") {
     $name = $_POST['name'];
@@ -81,7 +75,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $stmt->store_result();
 
     if ($stmt->num_rows > 0) {
-      echo "<script>alert('Email pahle se hi hai!');</script>";
+      $_SESSION['signupError'] = "Email pahle se hi hai!";
+      header("Location: index.php");
+      exit();
     } else {
       $stmt = $conn->prepare("INSERT INTO users (name, email, phone_number, address, username, password) VALUES (?, ?, ?, ?, ?, ?)");
       $stmt->bind_param("ssssss", $name, $email, $phone_number, $address, $username, $password);
@@ -112,19 +108,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>E-COM</title>
+  <title>Kharido</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
   <nav>
     <header>
-      <h1 class="logo">E-COM</h1>
+      <h1 class="logo">Kharido.com</h1>
       <div class="menu">
         <ul>
           <li><a href="#">Home</a></li>
-          <li><a href="#">Categories</a></li>
-          <li><a href="#">Contact Us</a></li>
+          <li><a href="#categories">Categories</a></li>
+          <li><a href="#contact">Contact Us</a></li>
         </ul>
       </div>
       <div class="right-menu">
@@ -154,8 +150,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <input type="password" id="login-password" name="password" required>
 
         <?php if (isset($_SESSION['loginError'])): ?>
-          <p class="error"><?php echo $_SESSION['loginError']; ?></p>
-          <?php unset($_SESSION['loginError']); ?>
+          <p class="error"><?php echo $_SESSION['loginError'];
+          unset($_SESSION['loginError']); ?></p>
         <?php endif; ?>
 
         <button type="submit">Login</button>
@@ -190,8 +186,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <input type="password" id="signup-password" name="password" required>
 
         <?php if (isset($_SESSION['signupError'])): ?>
-          <p class="error"><?php echo $_SESSION['signupError']; ?></p>
-          <?php unset($_SESSION['signupError']); ?>
+          <p class="error"><?php echo $_SESSION['signupError'];
+          unset($_SESSION['signupError']); ?></p>
         <?php endif; ?>
 
         <button type="submit">Sign Up</button>
@@ -204,7 +200,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <div class="home-page">
     <div class="home-details">
       <div class="details-container">
-        <h1>Simple, Personal</h1>
+        <h1>Quality products, secure shopping, fast and reliable delivery.</h1>
         <button>Shop Now</button>
       </div>
     </div>
@@ -214,7 +210,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
   </div>
 
-  <div class="categories-page">
+  <div class="categories-page" id="categories">
     <h1>Top categories</h1>
     <div class="categories-container">
       <?php foreach ($categories as $category): ?>
@@ -242,7 +238,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           echo "<h2 class='product-title'>" . $row["product_name"] . "</h2>";
           echo "<p>Price: ₹" . $row["price"] . "</p>";
           echo "<p>" . $row["product_description"] . "</p>";
-          ;
           echo "<p class='buy-btn'>Buy Now</p>";
           echo "</div>";
         }
@@ -252,28 +247,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       ?>
     </div>
   </div>
+  <div class="footer" id="contact">
+    <div class="footer-brand">
+      <div class="footer-logo">E-Com</div>
+      <div class="footer-description">Connecting you with the best experiences.</div>
+      <div class="footer-contact">Contact us : +91 9876054321</div>
+    </div>
+    <script>
+      function openModal(modalId) {
+        document.getElementById(modalId).style.display = 'flex';
+      }
 
-  <script>
-    function openModal(modalId) {
-      document.getElementById(modalId).style.display = 'flex';
-    }
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+      }
 
-    function closeModal(modalId) {
-      document.getElementById(modalId).style.display = 'none';
-    }
+      window.onclick = function (event) {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach((modal) => {
+          if (event.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
+      };
+    </script>
 
-    window.onclick = function (event) {
-      const modals = document.querySelectorAll('.modal');
-      modals.forEach((modal) => {
-        if (event.target === modal) {
-          modal.style.display = 'none';
-        }
-      });
-    };
-  </script>
-
-  <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
-  <script src="script.js"></script>
+    <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
+    <script src="script.js"></script>
 </body>
 
 </html>
